@@ -12,3 +12,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Add this near your other routes
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
