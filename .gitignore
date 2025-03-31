@@ -1,9 +1,5 @@
 node_modules/
 .env
-.env.*
-dist/
-build/
+.DS_Store
 logs/
 *.log
-.DS_Store
-coverage/
