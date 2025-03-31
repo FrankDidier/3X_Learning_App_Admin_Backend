@@ -14,6 +14,12 @@ app.use(cors({
 }));
 
 // Add this near your other routes
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' });
+});
+
+// Root endpoint
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
