@@ -1,41 +1,90 @@
 const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config();
+const cors = require('cors');
+const dotenv = require('dotenv');
+const path = require('path');
+const morgan = require('morgan');
+const errorHandler = require('./middleware/error');
 
+// Load environment variables
+dotenv.config();
+
+// Initialize Express app
 const app = express();
 
-// Add CORS configuration to allow both frontend and mobile app
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL,
-    process.env.MOBILE_APP_URL,
-    'capacitor://localhost',
-    'http://localhost',
-    'http://localhost:3000',
-    'http://localhost:8100'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/education-platform', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log('MongoDB connected...'))
+  .catch(err => {
+    console.error('MongoDB connection error:', err.message);
+    process.exit(1);
+  });
 
 // Body parser middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: false }));
+
+// CORS middleware
+app.use(cors());
+
+// Logging middleware in development
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Set static folder
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Define routes
+app.use('/api/admin', require('./routes/admin.routes'));
+app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/api/courses', require('./routes/course.routes'));
+app.use('/api/payments', require('./routes/payment.routes'));
+app.use('/api/promotions', require('./routes/promotion.routes'));
+app.use('/api/ai', require('./routes/ai.routes'));
+app.use('/api/quizzes', require('./routes/quiz.routes'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy' });
+  res.status(200).json({ status: 'UP', message: 'Server is running' });
 });
 
-// Root endpoint
+// Basic route
 app.get('/', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  res.json({ 
+    message: 'Welcome to Education Platform API',
+    version: '1.0.0'
+  });
 });
 
+// Custom error handler middleware
+app.use(errorHandler);
+
+// Handle 404 errors
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    error: 'NOT_FOUND'
+  });
+});
+
+// Set port
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Start server
+const server = app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Promise Rejection:', err);
+  // Close server & exit process
+  server.close(() => process.exit(1));
+});
+
+module.exports = server;
