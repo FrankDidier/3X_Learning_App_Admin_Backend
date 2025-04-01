@@ -29,7 +29,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // CORS middleware
 // Add this near the top of your server.js file
-const cors = require('cors');
+//const cors = require('cors');
 
 // Configure CORS
 app.use(cors({
@@ -41,6 +41,7 @@ app.use(cors({
     'http://localhost:8082',
     'http://localhost:3000',
     'https://3x-learning.vercel.app',
+    'https://3x-learn.netlify.app',
     'capacitor://localhost'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
