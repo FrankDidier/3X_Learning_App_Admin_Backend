@@ -28,7 +28,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // CORS middleware
-app.use(cors());
+// Add this near the top of your server.js file
+const cors = require('cors');
+
+// Configure CORS
+app.use(cors({
+  origin: [
+    'http://localhost:19006',
+    'http://localhost:19000',
+    'http://localhost:19001',
+    'http://localhost:19002',
+    'http://localhost:8082',
+    'http://localhost:3000',
+    'https://3x-learning.vercel.app',
+    'capacitor://localhost'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true
+}));
 
 // Logging middleware in development
 if (process.env.NODE_ENV === 'development') {
