@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/education-platform', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/education-platform', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
