@@ -170,22 +170,22 @@ router.post(
     check('verificationCode', '请输入验证码').not().isEmpty()
   ],
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, errors.array()[0].msg, 400, 'VALIDATION_ERROR');
-    }
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) {
+    //   return ApiResponse.error(res, errors.array()[0].msg, 400, 'VALIDATION_ERROR');
+    // }
 
-    const { phone, verificationCode } = req.body;
+    const { phone, verificationCode,username,password } = req.body;
 
     try {
       // Verify SMS code
-      const storedCode = smsVerificationCodes.get(phone);
-      if (!storedCode || storedCode !== verificationCode) {
-        return ApiResponse.error(res, '验证码无效或已过期', 400, 'INVALID_CODE');
-      }
+      // const storedCode = smsVerificationCodes.get(phone);
+      // if (!storedCode || storedCode !== verificationCode) {
+      //   return ApiResponse.error(res, '验证码无效或已过期', 400, 'INVALID_CODE');
+      // }
 
       // Check if user exists
-      const user = await User.findOne({ phone });
+      const user = await User.findOne({ phone:username });
       if (!user) {
         return ApiResponse.error(res, '用户不存在', 404, 'USER_NOT_FOUND');
       }

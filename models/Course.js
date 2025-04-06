@@ -23,7 +23,7 @@ const CourseSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['语文', '数学', '英语'],
+    enum: ['语文', '数学', '英语','物理','化学'],
     required: [true, '请选择课程类别']
   },
   difficulty: {

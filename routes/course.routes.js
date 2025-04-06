@@ -22,17 +22,19 @@ router.get('/', async (req, res) => {
       level, 
       difficulty, 
       search, 
-      sort = 'createdAt', 
-      order = 'desc' 
+      status,
+      isRecommended
     } = req.query;
     
     // Build query
-    const query = { status: '已发布' };
+    const query = {};
     
     // Add filters if provided
     if (category) query.category = category;
-    if (level) query.level = parseInt(level);
+    if (level) query.level = level;
     if (difficulty) query.difficulty = difficulty;
+    if (status) query.status = status;
+    if (isRecommended !== undefined) query.isRecommended = isRecommended === 'true';
     
     // Add search filter if provided
     if (search) {
@@ -46,13 +48,10 @@ router.get('/', async (req, res) => {
     // Count total documents
     const total = await Course.countDocuments(query);
     
-    // Determine sort order
-    const sortOrder = order === 'desc' ? -1 : 1;
-    
     // Fetch courses with pagination
     const courses = await Course.find(query)
       .populate('creator', 'name')
-      .sort({ [sort]: sortOrder })
+      .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
     
