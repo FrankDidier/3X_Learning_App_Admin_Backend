@@ -183,9 +183,9 @@ router.post(
       // if (!storedCode || storedCode !== verificationCode) {
       //   return ApiResponse.error(res, '验证码无效或已过期', 400, 'INVALID_CODE');
       // }
-
+      let loginuser = phone || username;
       // Check if user exists
-      const user = await User.findOne({ phone:username });
+      const user = await User.findOne({ phone:loginuser });
       if (!user) {
         return ApiResponse.error(res, '用户不存在', 404, 'USER_NOT_FOUND');
       }

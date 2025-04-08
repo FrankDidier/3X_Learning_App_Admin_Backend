@@ -286,10 +286,10 @@ router.post(
     check('order', '请指定章节顺序').isNumeric()
   ],
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, errors.array()[0].msg, 400, 'VALIDATION_ERROR');
-    }
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) {
+    //   return ApiResponse.error(res, errors.array()[0].msg, 400, 'VALIDATION_ERROR');
+    // }
 
     try {
       const course = await Course.findById(req.params.id);
@@ -407,6 +407,194 @@ router.get('/:courseId/sections/:sectionId', async (req, res) => {
     console.error(err);
     if (err.kind === 'ObjectId') {
       return ApiResponse.error(res, '无效的ID', 400, 'INVALID_ID');
+    }
+    ApiResponse.error(res, '服务器错误', 500, 'SERVER_ERROR');
+  }
+});
+
+// @route   GET /api/courses/:id/sections
+// @desc    Get all sections of a course
+// @access  Public
+router.get('/:id/sections', async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    
+    if (!course) {
+      return ApiResponse.error(res, '课程不存在', 404, 'COURSE_NOT_FOUND');
+    }
+    
+    const sections = await CourseSection.find({ course: course._id })
+      .sort({ order: 1 });
+    
+    ApiResponse.success(res, sections, '获取章节列表成功');
+  } catch (err) {
+    console.error(err);
+    if (err.kind === 'ObjectId') {
+      return ApiResponse.error(res, '无效的课程ID', 400, 'INVALID_ID');
+    }
+    ApiResponse.error(res, '服务器错误', 500, 'SERVER_ERROR');
+  }
+});
+
+// @route   PUT /api/courses/:courseId/sections/:sectionId
+// @desc    Update a course section
+// @access  Private (Teacher/Admin)
+router.put(
+  '/:courseId/sections/:sectionId',
+  [
+    protect,
+    authorize('teacher', 'admin')
+  ],
+  async (req, res) => {
+    try {
+      const course = await Course.findById(req.params.courseId);
+      
+      if (!course) {
+        return ApiResponse.error(res, '课程不存在', 404, 'COURSE_NOT_FOUND');
+      }
+      
+      // Check ownership (except admins)
+      if (req.user.role !== 'admin' && course.creator.toString() !== req.user.id) {
+        return ApiResponse.error(res, '未授权', 401, 'UNAUTHORIZED');
+      }
+      
+      const section = await CourseSection.findById(req.params.sectionId);
+      
+      if (!section) {
+        return ApiResponse.error(res, '章节不存在', 404, 'SECTION_NOT_FOUND');
+      }
+      
+      // Verify section belongs to the course
+      if (section.course.toString() !== req.params.courseId) {
+        return ApiResponse.error(res, '章节不属于该课程', 400, 'INVALID_SECTION');
+      }
+      
+      // Fields to update
+      const { 
+        title, 
+        description, 
+        videoUrl, 
+        videoThumbnail, 
+        order, 
+        duration, 
+        resources,
+        videoSegments,
+        isPreview 
+      } = req.body;
+      
+      // Update fields if provided
+      if (title) section.title = title;
+      if (description) section.description = description;
+      if (videoUrl) section.videoUrl = videoUrl;
+      if (videoThumbnail) section.videoThumbnail = videoThumbnail;
+      if (order) section.order = order;
+      if (duration) section.duration = duration;
+      if (resources) section.resources = resources;
+      if (videoSegments) section.videoSegments = videoSegments;
+      if (isPreview !== undefined) section.isPreview = isPreview === 'on' || isPreview === true;
+      
+      await section.save();
+      
+      // Update course duration
+      await course.calculateDuration();
+      await course.save();
+      
+      ApiResponse.success(res, section, '更新章节成功');
+    } catch (err) {
+      console.error(err);
+      if (err.kind === 'ObjectId') {
+        return ApiResponse.error(res, '无效的ID', 400, 'INVALID_ID');
+      }
+      ApiResponse.error(res, '服务器错误', 500, 'SERVER_ERROR');
+    }
+  }
+);
+
+// @route   DELETE /api/courses/:courseId/sections/:sectionId
+// @desc    Delete a course section
+// @access  Private (Teacher/Admin)
+router.delete(
+  '/:courseId/sections/:sectionId',
+  [
+    protect,
+    authorize('teacher', 'admin')
+  ],
+  async (req, res) => {
+    try {
+      const course = await Course.findById(req.params.courseId);
+      
+      if (!course) {
+        return ApiResponse.error(res, '课程不存在', 404, 'COURSE_NOT_FOUND');
+      }
+      
+      // Check ownership (except admins)
+      if (req.user.role !== 'admin' && course.creator.toString() !== req.user.id) {
+        return ApiResponse.error(res, '未授权', 401, 'UNAUTHORIZED');
+      }
+      
+      const section = await CourseSection.findById(req.params.sectionId);
+      
+      if (!section) {
+        return ApiResponse.error(res, '章节不存在', 404, 'SECTION_NOT_FOUND');
+      }
+      
+      // Verify section belongs to the course
+      if (section.course.toString() !== req.params.courseId) {
+        return ApiResponse.error(res, '章节不属于该课程', 400, 'INVALID_SECTION');
+      }
+      
+      // Remove section from course
+      course.sections = course.sections.filter(
+        sectionId => sectionId.toString() !== req.params.sectionId
+      );
+      await course.save();
+      
+      // Delete the section
+      await section.deleteOne();
+      
+      // Update course duration
+      await course.calculateDuration();
+      await course.save();
+      
+      ApiResponse.success(res, null, '删除章节成功');
+    } catch (err) {
+      console.error(err);
+      if (err.kind === 'ObjectId') {
+        return ApiResponse.error(res, '无效的ID', 400, 'INVALID_ID');
+      }
+      ApiResponse.error(res, '服务器错误', 500, 'SERVER_ERROR');
+    }
+  }
+);
+
+// @route   GET /api/courses/:id/enrollment
+// @desc    Check if the current user is enrolled in a course
+// @access  Private
+router.get('/:id/enrollment', protect, async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    
+    // Verify course exists
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return ApiResponse.error(res, '课程不存在', 404, 'COURSE_NOT_FOUND');
+    }
+    
+    // Get user details
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    
+    // Check if user is enrolled in this course
+    const isEnrolled = user.enrolledCourses.some(
+      id => id.toString() === courseId
+    );
+    
+    // Return the enrollment status
+    ApiResponse.success(res, { isEnrolled }, '获取课程注册状态成功');
+  } catch (err) {
+    console.error(err);
+    if (err.kind === 'ObjectId') {
+      return ApiResponse.error(res, '无效的课程ID', 400, 'INVALID_ID');
     }
     ApiResponse.error(res, '服务器错误', 500, 'SERVER_ERROR');
   }

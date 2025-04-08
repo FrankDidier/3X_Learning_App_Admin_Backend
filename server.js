@@ -39,6 +39,7 @@ app.use(cors({
     'http://localhost:19001',
     'http://localhost:19002',
     'http://localhost:8082',
+    'http://localhost:8081',
     'http://localhost:3000',
     'https://3x-learning.vercel.app',
     'https://3x-learn.netlify.app',
