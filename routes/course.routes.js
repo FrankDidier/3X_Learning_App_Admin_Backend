@@ -62,6 +62,46 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   GET /api/courses/popular
+// @desc    Get popular courses
+// @access  Public
+router.get('/popular', async (req, res) => {
+  try {
+    const popularCourses = await Course.find({ isRecommended: true })
+      .populate('creator', 'name')
+      .sort({ enrollmentCount: -1 })
+      .limit(10);
+    
+    ApiResponse.success(res, popularCourses, '获取热门课程成功');
+  } catch (err) {
+    console.error(err);
+    ApiResponse.error(res, '服务器错误', 500, 'SERVER_ERROR');
+  }
+});
+
+// @route   GET /api/courses/enrolled
+// @desc    Get all courses enrolled by the current user
+// @access  Private
+router.get('/enrolled', protect, async (req, res) => {
+  try {
+    // Get user details with enrolled courses
+    const User = require('../models/User');
+    const user = await User.findById(req.user._id);
+    
+    // Get detailed information for all enrolled courses
+    const enrolledCourses = await Course.find({
+      _id: { $in: user.enrolledCourses }
+    })
+      .populate('creator', 'name')
+      .sort({ createdAt: -1 });
+    
+    ApiResponse.success(res, enrolledCourses, '获取已报名课程成功');
+  } catch (err) {
+    console.error(err);
+    ApiResponse.error(res, '服务器错误', 500, 'SERVER_ERROR');
+  }
+});
+
 // @route   GET /api/courses/:id
 // @desc    Get course by ID
 // @access  Public
@@ -582,7 +622,7 @@ router.get('/:id/enrollment', protect, async (req, res) => {
     
     // Get user details
     const User = require('../models/User');
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     
     // Check if user is enrolled in this course
     const isEnrolled = user.enrolledCourses.some(
@@ -591,6 +631,52 @@ router.get('/:id/enrollment', protect, async (req, res) => {
     
     // Return the enrollment status
     ApiResponse.success(res, { isEnrolled }, '获取课程注册状态成功');
+  } catch (err) {
+    console.error(err);
+    if (err.kind === 'ObjectId') {
+      return ApiResponse.error(res, '无效的课程ID', 400, 'INVALID_ID');
+    }
+    ApiResponse.error(res, '服务器错误', 500, 'SERVER_ERROR');
+  }
+});
+
+// @route   POST /api/courses/:id/enroll
+// @desc    Enroll in a course
+// @access  Private
+router.post('/:id/enroll', protect, async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    
+    // Verify course exists
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return ApiResponse.error(res, '课程不存在', 404, 'COURSE_NOT_FOUND');
+    }
+    
+    // Check if course is published
+    if (course.status !== '已发布') {
+      return ApiResponse.error(res, '课程未发布', 400, 'COURSE_NOT_PUBLISHED');
+    }
+    
+    // Get user details
+    const User = require('../models/User');
+    const user = await User.findById(req.user._id);
+    
+    // Check if user is already enrolled
+    if (user.enrolledCourses.includes(courseId)) {
+      return ApiResponse.error(res, '您已报名此课程', 400, 'ALREADY_ENROLLED');
+    }
+    
+    // Add course to user's enrolled courses
+    user.enrolledCourses.push(courseId);
+    await user.save();
+    
+    // Increment course enrollment count
+    course.enrollmentCount = (course.enrollmentCount || 0) + 1;
+    await course.save();
+    
+    // Return success response
+    ApiResponse.success(res, { courseId }, '报名课程成功');
   } catch (err) {
     console.error(err);
     if (err.kind === 'ObjectId') {
