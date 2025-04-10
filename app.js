@@ -14,3 +14,12 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // ... 其他中间件和路由配置 
+
+const courseRoutes = require('./routes/course.routes');
+const teacherRoutes = require('./routes/teacher.routes');
+
+// Routes
+app.use('/api/courses', courseRoutes);
+app.use('/api/teaching', teacherRoutes);
+
+// ... existing code ... 
