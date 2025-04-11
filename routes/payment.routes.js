@@ -21,10 +21,10 @@ router.post(
     check('paymentMethod', '请选择支付方式').isIn(['wechat', 'alipay']),
   ],
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, errors.array()[0].msg, 400, 'VALIDATION_ERROR');
-    }
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) {
+    //   return ApiResponse.error(res, errors.array()[0].msg, 400, 'VALIDATION_ERROR');
+    // }
 
     try {
       const { courseId, paymentMethod, promotionCode } = req.body;

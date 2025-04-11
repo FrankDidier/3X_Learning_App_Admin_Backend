@@ -54,6 +54,10 @@ const CourseSectionSchema = new mongoose.Schema({
     },
     description: String
   }],
+  lessons: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Lesson'
+  }],
   isPreview: {
     type: Boolean,
     default: false

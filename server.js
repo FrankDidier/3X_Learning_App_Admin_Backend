@@ -39,6 +39,7 @@ app.use(cors({
     'http://localhost:19001',
     'http://localhost:19002',
     'http://localhost:8082',
+    'http://localhost:8081',
     'http://localhost:3000',
     'https://3x-learning.vercel.app',
     'https://3x-learn.netlify.app',
@@ -64,6 +65,8 @@ app.use('/api/payments', require('./routes/payment.routes'));
 app.use('/api/promotions', require('./routes/promotion.routes'));
 app.use('/api/ai', require('./routes/ai.routes'));
 app.use('/api/quizzes', require('./routes/quiz.routes'));
+app.use('/api/subscriptions', require('./routes/subscriptions.routes'));
+app.use('/api/teaching', require('./routes/teacher.routes'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

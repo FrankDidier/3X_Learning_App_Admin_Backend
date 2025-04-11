@@ -14,6 +14,7 @@ exports.processWeChatPayment = async (userId, courseId, amount) => {
       course: courseId,
       amount,
       method: 'wechat',
+      type: 'course',
       status: 'pending'
     });
     
@@ -47,6 +48,7 @@ exports.processAlipayPayment = async (userId, courseId, amount) => {
       course: courseId,
       amount,
       method: 'alipay',
+      type: 'course',
       status: 'pending'
     });
     

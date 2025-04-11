@@ -183,9 +183,9 @@ router.post(
       // if (!storedCode || storedCode !== verificationCode) {
       //   return ApiResponse.error(res, '验证码无效或已过期', 400, 'INVALID_CODE');
       // }
-
+      let loginuser = phone || username;
       // Check if user exists
-      const user = await User.findOne({ phone:username });
+      const user = await User.findOne({ phone:loginuser });
       if (!user) {
         return ApiResponse.error(res, '用户不存在', 404, 'USER_NOT_FOUND');
       }
@@ -332,5 +332,28 @@ router.put(
     }
   }
 );
+
+// @route   GET /api/auth/courses
+// @desc    Get user's enrolled courses
+// @access  Private
+router.get('/courses', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .populate({
+        path: 'enrolledCourses',
+        select: 'title description thumbnail level category difficulty price discountPrice rating status duration',
+        match: { status: '已发布' }
+      });
+    
+    if (!user) {
+      return ApiResponse.error(res, '用户不存在', 404, 'USER_NOT_FOUND');
+    }
+    
+    ApiResponse.success(res, user.enrolledCourses, '获取报名课程成功');
+  } catch (err) {
+    console.error(err);
+    ApiResponse.error(res, '服务器错误', 500, 'SERVER_ERROR');
+  }
+});
 
 module.exports = router; 
